@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Macro Planner
 
-## Getting Started
+Private PWA: what to eat at Teraanga Commons to hit protein under a sodium cap, plus the daily habit tracker.
+Next.js 16 (App Router) · Auth.js (Google, one-email allowlist) · Supabase Postgres via Drizzle · Vercel Cron.
 
-First, run the development server:
+Targets (editable in Settings): **140 g protein · 1750 kcal · <2300 mg sodium · ~3400 mg potassium**.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Scripts
+
+| | |
+|---|---|
+| `npm run dev` | local dev server on :3000 |
+| `npm test` | unit tests (parser, potassium math, habits, dates) |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run db:generate` | write a new SQL migration after editing `src/db/schema.ts` |
+| `npm run db:migrate` | apply migrations in `drizzle/` to the database in `DIRECT_URL` |
+| `npm run db:studio` | browse the database |
+
+## Layout
+
+```
+src/
+  auth.ts, proxy.ts        sign-in + sign-in wall (cron route exempt; it checks CRON_SECRET)
+  db/schema.ts             all tables (settings.mode is the home/dining switch)
+  lib/nutrition.ts         nutrition-panel parser, potassium estimate, totals, K:Na
+  lib/habits.ts            tretinoin ramp, gym rotation, streaks
+  lib/data.ts              read queries        app/actions.ts   all writes (server actions)
+  app/(app)/               Today, Week, Goals, Settings
+  app/api/cron/ingest      daily job (phase 2 fills it in)
+fixtures/                  saved menu responses the parser tests run against
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Phases
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Foundation** — scaffold, auth, PWA, habits, home-mode meal template, quick-add ✅ code done
+2. **Menu ingest** — find the JSON endpoint, parser + fixtures, daily cron, 7 days
+3. **Plan + log** — greedy planner, tick-off from plan, potassium matching (CNF)
+4. **Live + v2** — LLM planner, reminders, weekly report
