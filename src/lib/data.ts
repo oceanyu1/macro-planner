@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, between, count, desc, eq, max } from "drizzle-orm";
+import { and, asc, between, count, desc, eq, inArray, max } from "drizzle-orm";
 import { db } from "@/db";
 import {
   application,
@@ -10,8 +10,10 @@ import {
   menuDay,
   menuItem,
   milestone,
+  plan,
   settings,
 } from "@/db/schema";
+import type { Candidate, PlanMeal } from "./planner";
 import { emptyHabit, type HabitRow } from "./habits";
 
 export type Settings = typeof settings.$inferSelect;
@@ -86,4 +88,51 @@ export async function getMenuCoverage(from: string, to: string) {
     db.select({ at: max(menuItem.updatedAt) }).from(menuItem),
   ]);
   return { rows, lastUpdated: last?.at ?? null };
+}
+
+/** Everything served on a date, grouped by meal, in the planner's shape. */
+export async function getMenuForDate(date: string): Promise<Record<PlanMeal, Candidate[]>> {
+  const rows = await db
+    .select({ meal: menuDay.meal, item: menuItem })
+    .from(menuDay)
+    .innerJoin(menuItem, eq(menuDay.menuItemId, menuItem.id))
+    .where(eq(menuDay.date, date));
+  const out: Record<PlanMeal, Candidate[]> = { breakfast: [], lunch: [], dinner: [] };
+  for (const r of rows) if (r.meal !== "snack") out[r.meal].push(toCandidate(r.item));
+  return out;
+}
+
+export function toCandidate(i: typeof menuItem.$inferSelect): Candidate {
+  return {
+    id: i.id,
+    sourceId: i.sourceId,
+    name: i.name,
+    station: i.station,
+    kind: i.kind,
+    servingSize: i.servingSize,
+    servingAmount: i.servingAmount,
+    servingUnit: i.servingUnit,
+    calories: i.calories,
+    proteinG: i.proteinG,
+    sodiumMg: i.sodiumMg,
+    kMgEst: i.kMgEst,
+    ingredients: i.ingredients,
+  };
+}
+
+export async function getPlans(date: string) {
+  return db.select().from(plan).where(eq(plan.date, date));
+}
+
+export async function getMenuItems(ids: number[]) {
+  if (!ids.length) return [];
+  return db.select().from(menuItem).where(inArray(menuItem.id, ids));
+}
+
+/** Plan items already ticked off (logged) on a date. */
+export async function getPlanLogged(date: string) {
+  return db
+    .select({ id: foodLog.id, meal: foodLog.meal, menuItemId: foodLog.menuItemId })
+    .from(foodLog)
+    .where(and(eq(foodLog.date, date), eq(foodLog.source, "plan")));
 }

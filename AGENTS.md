@@ -25,11 +25,12 @@ Private, single-user PWA. It plans what to eat at the Teraanga Commons dining ha
 |---|---|
 | 1. Foundation: auth, schema, habits, home-mode meals, PWA | **Done and deployed** |
 | 2. Menu ingest | **Done.** Verified live 2026-11-24 via Settings → Pull menu now (7 days, ~40 B / ~75 L / ~80 D items). Cron path not yet exercised (mode is still `home`) |
-| 3. Planner v1 (greedy), tick-off from plan, potassium matching | **In progress** |
+| 3. Planner v1 (greedy), tick-off from plan, potassium matching | **In progress.** Planner, plan UI, tick-off, ✕ reject/re-plan committed (not yet tried in the browser). **Potassium (CNF matching + Review screen) in progress** |
 | 4. LLM planner (v2), push reminders, weekly report | Not started |
 
+- **Later ideas** (daily speaking-practice text, roadmap.sh backend checklist) are in `BACKLOG.md`. Don't build them until asked.
 - **Production:** https://macro-planner-three-pi.vercel.app (Vercel Hobby, region `pdx1`). **Repo:** github.com/oceanyu1/macro-planner, `main`.
-- **Supabase:** Postgres 17, West US (Oregon). Migrations `0000_init` and `0001_lock_rest_api` are applied.
+- **Supabase:** Postgres 17, West US (Oregon). Migrations `0000_init`, `0001_lock_rest_api` and `0002_plan_rejected` are applied.
 - iOS white-screen hang (postgres.js pipelining) is fixed by `d45c349`; user confirmed on the phone 2026-11-24.
 
 ## Decisions already made (don't re-ask)
@@ -58,11 +59,13 @@ src/db/schema.ts             all tables; src/db/index.ts = lazy pg Pool + attach
 src/lib/data.ts              read queries        src/app/actions.ts   all writes (server actions, zod-validated)
 src/lib/nutrition.ts         nutrition-panel parser, serving→grams, potassium estimate, totals, K:Na
 src/lib/habits.ts            tretinoin ramp, gym rotation, streaks      src/lib/dates.ts  Toronto-time date helpers
+src/lib/planner.ts           pure planner v1 (planDay, budgets, blocked-food aliases); tested on fixtures
+src/lib/plan-service.ts      generatePlan(date): load menu + existing plan rows, keep locked/rejected, save plan rows
 src/app/(app)/               Today (/), /week, /goals, /settings   src/app/login/
 src/lib/menu/api.ts          endpoint, headers, query, meal period ids, station names
 src/lib/menu/parse.ts        pure response parser (tested on fixtures)   kind.ts  protein/veg/starch/dessert classifier
 src/lib/menu/ingest.ts       fetch + upsert menu_item + rewrite menu_day per date×meal; ingestRange(start, days)
-src/app/api/cron/ingest/     daily job: checks Bearer CRON_SECRET, exits in home mode, else ingests today+6; plan is TODO
+src/app/api/cron/ingest/     daily job: checks Bearer CRON_SECRET, exits in home mode, else ingests today+6 and re-plans today + tomorrow
 src/app/manifest.ts, icons/[size]/route.tsx, apple-icon.tsx, public/sw.js   PWA
 drizzle/                     generated SQL migrations     fixtures/   saved menu responses for parser tests
 ```
@@ -108,6 +111,15 @@ Env (`.env.local` locally and in Vercel; see `.env.example`): `DATABASE_URL` (tr
 5. Fallback if there's no clean API: Playwright on a GitHub Actions schedule posting to the app.
 
 ## Planner rules (phase 3)
+
+As built (`src/lib/planner.ts`):
+- Budgets: each meal gets its protein-split share (B 30 / L 45 / D 45 of 140) of the calorie target and the sodium cap; the snack share (20/140) is reserved for food the user brings. Protein buffer 6 g spread over the meals.
+- Protein: exhaustive search over ≤ 2 protein dishes × 1–2 servings × each serving size (cheap: ≤ ~2k combos). Protein sources are kind protein/dairy with ≥ 5 g and ≥ 5 g per 100 kcal. Low-sodium protein is worth some overshoot, so days land ~15–20 g over the meal target.
+- Blocked foods match name + ingredients, and **pork also blocks its aliases** (bacon, ham, pepperoni, chorizo, sausage, salami, peameal, chasu…) unless the name says turkey/chicken/beef/plant-based. The menu's ingredient lists say "Peameal bacon", not "pork".
+- A meal with anything ticked off is `plan.locked` and kept as is on re-plan. ✕ adds the dish's `source_id` to `plan.rejected` and re-plans the day. Cron and "Pull menu now" re-plan today + tomorrow.
+- Potassium is 0 / unknown until CNF matching fills `menu_item.k_mg_est`.
+
+Original design notes:
 
 - Greedy v1 is the permanent fallback:
   1. Filter out blocked foods and desserts.

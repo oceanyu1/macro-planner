@@ -12,11 +12,14 @@ import {
   habitDay,
   mealEnum,
   mealTemplate,
+  menuItem,
   milestone,
+  plan,
   settings,
 } from "@/db/schema";
-import { isValidIsoDate, today } from "@/lib/dates";
+import { addDays, isValidIsoDate, today } from "@/lib/dates";
 import { ingestRange } from "@/lib/menu/ingest";
+import { generatePlan } from "@/lib/plan-service";
 import { requireUser } from "@/lib/session";
 
 const isoDate = z.string().refine(isValidIsoDate, "bad date");
@@ -340,10 +343,101 @@ export async function deleteMilestone(id: number) {
  */
 export async function pullMenu(): Promise<string> {
   await requireUser();
-  const r = await ingestRange(today(), 7);
+  const start = today();
+  const r = await ingestRange(start, 7);
+  await generatePlan(start);
+  await generatePlan(addDays(start, 1));
   done();
   const items = r.days.reduce((a, d) => a + d.meals.reduce((b, m) => b + m.items, 0), 0);
   const errors = r.days.flatMap((d) => d.meals.filter((m) => m.error).map((m) => `${d.date} ${m.meal}: ${m.error}`));
   const head = `${items} menu rows over ${r.days.length} days, ${r.requests} requests, ${(r.ms / 1000).toFixed(1)} s.`;
   return errors.length ? `${head} ${errors.length} failed: ${errors.slice(0, 3).join("; ")}` : head;
+}
+
+/* ---------- plan (dining mode) ---------- */
+
+const planMeal = z.enum(["breakfast", "lunch", "dinner"]);
+
+/** Plan (or re-plan) a whole day. Locked meals and rejections are kept. */
+export async function planDate(date: string) {
+  await requireUser();
+  await generatePlan(isoDate.parse(date));
+  done();
+}
+
+/** ✕ on a planned dish: never suggest it again for this meal today, and re-plan. */
+export async function rejectPlanItem(date: string, mealName: string, sourceId: string) {
+  await requireUser();
+  const d = isoDate.parse(date);
+  const m = planMeal.parse(mealName);
+  const s = z.string().min(1).max(40).parse(sourceId);
+  await db
+    .update(plan)
+    .set({ rejected: sql`array_append(array_remove(${plan.rejected}, ${s}), ${s})` })
+    .where(and(eq(plan.date, d), eq(plan.meal, m)));
+  await generatePlan(d);
+  done();
+}
+
+/** Bring back everything rejected for a meal, and re-plan. */
+export async function clearRejected(date: string, mealName: string) {
+  await requireUser();
+  const d = isoDate.parse(date);
+  await db
+    .update(plan)
+    .set({ rejected: [] })
+    .where(and(eq(plan.date, d), eq(plan.meal, planMeal.parse(mealName))));
+  await generatePlan(d);
+  done();
+}
+
+/**
+ * Tick a planned dish eaten (logs it, snapshotting its nutrients) or untick it.
+ * A meal with anything ticked is locked, so re-planning leaves it alone.
+ */
+export async function togglePlanItem(date: string, mealName: string, itemId: number) {
+  await requireUser();
+  const d = isoDate.parse(date);
+  const m = planMeal.parse(mealName);
+  const id = z.number().int().parse(itemId);
+
+  const [row] = await db.select().from(plan).where(and(eq(plan.date, d), eq(plan.meal, m)));
+  const planned = row?.items.find((i) => i.itemId === id);
+  if (!row || !planned) return;
+
+  const existing = await db
+    .select({ id: foodLog.id })
+    .from(foodLog)
+    .where(and(eq(foodLog.date, d), eq(foodLog.meal, m), eq(foodLog.menuItemId, id), eq(foodLog.source, "plan")));
+
+  if (existing.length) {
+    await db.delete(foodLog).where(eq(foodLog.id, existing[0].id));
+  } else {
+    const [item] = await db.select().from(menuItem).where(eq(menuItem.id, id));
+    if (!item) return;
+    const n = planned.servings;
+    await db.insert(foodLog).values({
+      date: d,
+      meal: m,
+      menuItemId: id,
+      name: item.name,
+      servings: n,
+      proteinG: (item.proteinG ?? 0) * n,
+      calories: Math.round((item.calories ?? 0) * n),
+      sodiumMg: Math.round((item.sodiumMg ?? 0) * n),
+      potassiumMg: Math.round((item.kMgEst ?? 0) * n),
+      kIsEstimate: true,
+      source: "plan",
+    });
+  }
+
+  const [{ ticked }] = await db
+    .select({ ticked: sql<number>`count(*)::int` })
+    .from(foodLog)
+    .where(and(eq(foodLog.date, d), eq(foodLog.meal, m), eq(foodLog.source, "plan")));
+  await db
+    .update(plan)
+    .set({ locked: ticked > 0 })
+    .where(and(eq(plan.date, d), eq(plan.meal, m)));
+  done();
 }
