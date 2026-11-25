@@ -44,6 +44,15 @@ const UNIT_ALIASES: Record<string, string> = {
   gram: "g",
   grams: "g",
   gm: "g",
+  kg: "kg",
+  kilogram: "kg",
+  kilograms: "kg",
+  tsp: "tsp",
+  teaspoon: "tsp",
+  teaspoons: "tsp",
+  tbsp: "tbsp",
+  tablespoon: "tbsp",
+  tablespoons: "tbsp",
   ml: "ml",
   milliliter: "ml",
   milliliters: "ml",
@@ -161,7 +170,10 @@ export function mainIngredients(ingredients: string | null, n = 2): string[] {
 
 const GRAMS_PER: Record<string, number> = {
   g: 1,
+  kg: 1000,
   ml: 1, // rough: 1 mL ≈ 1 g, per the design plan
+  tsp: 5,
+  tbsp: 15,
   oz: 28.35,
   floz: 29.57,
   cup: 240,

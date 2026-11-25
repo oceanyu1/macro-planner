@@ -1,16 +1,29 @@
 import { signOut } from "@/auth";
 import { addTemplateItem, deleteFavourite, deleteTemplateItem, saveSettings } from "@/app/actions";
+import { PullMenuButton } from "@/components/pull-menu";
 import { Submit } from "@/components/ui";
 import type { MealName } from "@/db/schema";
-import { getFavourites, getSettings, getTemplate } from "@/lib/data";
+import { getFavourites, getMenuCoverage, getSettings, getTemplate } from "@/lib/data";
+import { addDays, prettyDate, today } from "@/lib/dates";
 import { sumNutrients } from "@/lib/nutrition";
 import { requireUser } from "@/lib/session";
 
 const MEALS: MealName[] = ["breakfast", "lunch", "dinner", "snack"];
 
+// "Pull menu now" runs the 7-day ingest inside this page's server action.
+export const maxDuration = 300;
+
 export default async function SettingsPage() {
   const user = await requireUser();
-  const [s, template, favourites] = await Promise.all([getSettings(), getTemplate(), getFavourites()]);
+  const start = today();
+  const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  const [s, template, favourites, menu] = await Promise.all([
+    getSettings(),
+    getTemplate(),
+    getFavourites(),
+    getMenuCoverage(days[0], days[6]),
+  ]);
+  const menuCount = (d: string, m: MealName) => menu.rows.find((r) => r.date === d && r.meal === m)?.items ?? 0;
   const tTotals = sumNutrients(template);
   const splitSum = MEALS.reduce((a, m) => a + (s.proteinSplit[m] ?? 0), 0);
 
@@ -94,6 +107,47 @@ export default async function SettingsPage() {
 
         <Submit className="btn-primary w-full">Save settings</Submit>
       </form>
+
+      {/* dining-hall menu ingest */}
+      <section className="card space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="h2">Dining hall menu</h2>
+          <span className="text-xs text-muted">
+            {menu.lastUpdated
+              ? `updated ${menu.lastUpdated.toLocaleString("en-CA", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" })}`
+              : "never pulled"}
+          </span>
+        </div>
+        <table className="w-full text-sm tabular-nums">
+          <thead>
+            <tr className="text-xs text-muted">
+              <th className="text-left font-normal">Items per meal</th>
+              <th className="font-normal">B</th>
+              <th className="font-normal">L</th>
+              <th className="font-normal">D</th>
+            </tr>
+          </thead>
+          <tbody>
+            {days.map((d) => (
+              <tr key={d}>
+                <td>{prettyDate(d)}</td>
+                {(["breakfast", "lunch", "dinner"] as const).map((m) => {
+                  const n = menuCount(d, m);
+                  return (
+                    <td key={m} className={`text-center ${n ? "" : "text-muted"}`}>
+                      {n || "–"}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="text-xs text-muted">
+          Pulled nightly in dining mode. The button works in either mode.
+        </p>
+        <PullMenuButton />
+      </section>
 
       {/* home template */}
       <section className="card space-y-3">

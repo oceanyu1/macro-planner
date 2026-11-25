@@ -1,0 +1,375 @@
+{
+    "data": {
+        "getLocation": {
+            "commerceAttributes": {
+                "uid": "Mjc3NzE1",
+                "url_key": "teraanga-commons-dining-hall",
+                "address_line_1": "1125 Colonel By Drive",
+                "address_line_2": "Teraanga Commons Building 3rd Floor",
+                "city_locality": "Ottawa",
+                "state_province": "ON",
+                "postal_code": "K1S 5B6",
+                "timezone": "America/Toronto",
+                "display_menu_type": 2,
+                "display_in_menu_highlights": "96,99,609,90,108,78,75",
+                "display_favorite_recipes": 1,
+                "display_meal_calculator": 1,
+                "display_nutrition_information": 1,
+                "display_nml_oml": 2,
+                "display_minimized_recipes": 3,
+                "display_ingredients": 1,
+                "stations": null,
+                "longitude": "-75.69656",
+                "latitude": "45.38323",
+                "menu_preferences": "96,99,609,90,108,78,75",
+                "maxMenusDate": "2026-12-06",
+                "is_display_price_on_the_menu": 1,
+                "is_display_price_zero": 0,
+                "is_display_product_images_on_the_menu": 1,
+                "hasActiveMenus": true,
+                "children": [
+                    {
+                        "id": 295922,
+                        "name": "Grill 42",
+                        "description": null,
+                        "image": null,
+                        "position": 1,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295955,
+                        "name": "Grill 42 Comfort",
+                        "description": null,
+                        "image": null,
+                        "position": 2,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295940,
+                        "name": "Training Table",
+                        "description": null,
+                        "image": null,
+                        "position": 3,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295937,
+                        "name": "Umami",
+                        "description": null,
+                        "image": null,
+                        "position": 4,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295931,
+                        "name": "True balance",
+                        "description": null,
+                        "image": null,
+                        "position": 5,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277733,
+                        "name": "Vegan",
+                        "description": null,
+                        "image": null,
+                        "position": 6,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295952,
+                        "name": "Sautee",
+                        "description": null,
+                        "image": null,
+                        "position": 7,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277718,
+                        "name": "Deli",
+                        "description": null,
+                        "image": null,
+                        "position": 8,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277736,
+                        "name": "Breakfast ONLY",
+                        "description": null,
+                        "image": null,
+                        "position": 9,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277742,
+                        "name": "Breakfast Bar",
+                        "description": null,
+                        "image": null,
+                        "position": 10,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277730,
+                        "name": "Main",
+                        "description": null,
+                        "image": null,
+                        "position": 11,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277727,
+                        "name": "Pasta",
+                        "description": null,
+                        "image": null,
+                        "position": 12,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277721,
+                        "name": "Sides",
+                        "description": null,
+                        "image": null,
+                        "position": 13,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277745,
+                        "name": "Salad",
+                        "description": null,
+                        "image": null,
+                        "position": 14,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277724,
+                        "name": "Soup",
+                        "description": null,
+                        "image": null,
+                        "position": 15,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 277739,
+                        "name": "Bakery",
+                        "description": null,
+                        "image": null,
+                        "position": 16,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295925,
+                        "name": "Smoothie Station",
+                        "description": null,
+                        "image": null,
+                        "position": 17,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295928,
+                        "name": "All Day Breakfast",
+                        "description": null,
+                        "image": null,
+                        "position": 18,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295934,
+                        "name": "MTO Toast",
+                        "description": null,
+                        "image": null,
+                        "position": 19,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295946,
+                        "name": "Pizza",
+                        "description": null,
+                        "image": null,
+                        "position": 21,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    },
+                    {
+                        "id": 295949,
+                        "name": "Omeletes",
+                        "description": null,
+                        "image": null,
+                        "position": 22,
+                        "meal_period_overrides": null,
+                        "__typename": "Commerce_CategoryTree"
+                    }
+                ],
+                "allergens_intolerances": null,
+                "meal_periods": [
+                    {
+                        "id": 10,
+                        "name": "Breakfast",
+                        "position": 25,
+                        "__typename": "Commerce_MealPeriod"
+                    },
+                    {
+                        "id": 13,
+                        "name": "Brunch",
+                        "position": 70,
+                        "__typename": "Commerce_MealPeriod"
+                    },
+                    {
+                        "id": 25,
+                        "name": "Lunch",
+                        "position": 90,
+                        "__typename": "Commerce_MealPeriod"
+                    },
+                    {
+                        "id": 16,
+                        "name": "Dinner",
+                        "position": 140,
+                        "__typename": "Commerce_MealPeriod"
+                    },
+                    {
+                        "id": 4,
+                        "name": "All Day",
+                        "position": 180,
+                        "__typename": "Commerce_MealPeriod"
+                    }
+                ],
+                "__typename": "Commerce_CategoryTree"
+            },
+            "aemAttributes": {
+                "name": "Teraanga Commons Dining Hall",
+                "featuredLocation": true,
+                "teaserAssetRef": {
+                    "_dynamicUrl": "/adobe/dynamicmedia/deliver/dm-aid--c900a6ba-067f-45f3-861e-7c4d1b018e35/DSC00222.jpg",
+                    "width": 3072,
+                    "height": 2048,
+                    "__typename": "AEM_ImageRef"
+                },
+                "mainAssetRef": {
+                    "_dynamicUrl": "/adobe/dynamicmedia/deliver/dm-aid--1a912987-06a4-4c4c-80d7-d610f7f565e5/DSC00123.jpg",
+                    "width": 4608,
+                    "height": 3072,
+                    "__typename": "AEM_ImageRef"
+                },
+                "logoAssetRef": null,
+                "globalPaymentMethods": null,
+                "globalMobileOrderingMethods": null,
+                "additionalMobileOrderingMethods": null,
+                "additionalPaymentMethods": null,
+                "mobileOrderingLink": null,
+                "additionalInfo": {
+                    "html": null,
+                    "__typename": "AEM_MultiFormatString"
+                },
+                "goodToKnow": [],
+                "wayfindingInstructions": null,
+                "voc": null,
+                "contacts": [
+                    {
+                        "firstName": null,
+                        "lastName": null,
+                        "email": "diningservices@carleton.ca",
+                        "jobTitle": null,
+                        "phone": null,
+                        "__typename": "AEM_ContactModel"
+                    }
+                ],
+                "description": {
+                    "html": "<p>Located on the 3rd floor Teraanga Commons Dining Hall is an all-you-care-to-eat dining hall featuring a wide variety of food choices. This site lets you see what’s being served according to each meal period. Please note that menu items are subject to change. For the most up to date dietary information please refer to our menu boards and signs at Teraanga Commons Dining Hall. Due to the nature of our open kitchen and self-serve dining hall, cross-contamination with allergens and gluten is possible for all menu items listed.</p>\n<p>Our dining hall does not serve products that contain any peanuts or tree nuts. However, some food ingredients we use may have a “may contain peanuts and/or tree nuts” warning. Hence, we cannot guarantee that our dining hall is completely ‘free’ of peanuts or tree nuts. For any dietary concerns, please reach out to our Registered Dietitian ahead of your visit or speak to a Chef in a white coat while at the Teraanga Commons Dining Hall.</p>\n",
+                    "plaintext": "Located on the 3rd floor Teraanga Commons Dining Hall is an all-you-care-to-eat dining hall featuring a wide variety of food choices. This site lets you see what’s being served according to each meal period. Please note that menu items are subject to change. For the most up to date dietary information please refer to our menu boards and signs at Teraanga Commons Dining Hall. Due to the nature of our open kitchen and self-serve dining hall, cross-contamination with allergens and gluten is possible for all menu items listed.\n\nOur dining hall does not serve products that contain any peanuts or tree nuts. However, some food ingredients we use may have a “may contain peanuts and/or tree nuts” warning. Hence, we cannot guarantee that our dining hall is completely ‘free’ of peanuts or tree nuts. For any dietary concerns, please reach out to our Registered Dietitian ahead of your visit or speak to a Chef in a white coat while at the Teraanga Commons Dining Hall.",
+                    "__typename": "AEM_MultiFormatString"
+                },
+                "announcement": {
+                    "html": null,
+                    "__typename": "AEM_MultiFormatString"
+                },
+                "downloadHeading": null,
+                "downloadDescription": null,
+                "downloadAssets": [],
+                "hoursOfOperation": {
+                    "_path": "/content/dam/cf/can/carleton/en/hop/campus-teraanga-commons-dining-hall",
+                    "schedule": [
+                        {
+                            "id": "s2emyb5",
+                            "name": "Standard",
+                            "type": "standard",
+                            "meal_periods": [
+                                {
+                                    "meal_period": "Breakfast",
+                                    "opening_hours": "Mo-Su 07:30-11:00"
+                                },
+                                {
+                                    "meal_period": "Brunch",
+                                    "opening_hours": ""
+                                },
+                                {
+                                    "meal_period": "Lunch",
+                                    "opening_hours": "Mo-Su 11:00-16:30"
+                                },
+                                {
+                                    "meal_period": "Dinner",
+                                    "opening_hours": "Mo-Su 16:30-22:00"
+                                },
+                                {
+                                    "meal_period": "All Day",
+                                    "opening_hours": ""
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ftxuy2x",
+                            "name": "Planned Water Shutdown",
+                            "type": "special",
+                            "meal_periods": [
+                                {
+                                    "meal_period": "Breakfast",
+                                    "opening_hours": "Mo-Su 07:30-11:00"
+                                },
+                                {
+                                    "meal_period": "Brunch",
+                                    "opening_hours": ""
+                                },
+                                {
+                                    "meal_period": "Lunch",
+                                    "opening_hours": "Mo-Su 11:00-16:30"
+                                },
+                                {
+                                    "meal_period": "Dinner",
+                                    "opening_hours": "Mo-We 16:30-22:00; Th 16:30-21:00; Fr-Su 16:30-22:00"
+                                },
+                                {
+                                    "meal_period": "All Day",
+                                    "opening_hours": ""
+                                }
+                            ],
+                            "start_date": "2026-11-19",
+                            "end_date": "2026-11-19"
+                        }
+                    ],
+                    "__typename": "AEM_HoursOfOperationModel"
+                },
+                "mealPricing": null,
+                "_path": "/content/dam/cf/can/carleton/en/locations/campus/teraanga-commons-dining-hall",
+                "__typename": "AEM_LocationModel"
+            },
+            "__typename": "Location"
+        }
+    }
+}

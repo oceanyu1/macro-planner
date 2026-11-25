@@ -1,8 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/data";
+import { today } from "@/lib/dates";
+import { ingestRange } from "@/lib/menu/ingest";
 
-export const maxDuration = 60;
+// ~21 sequential requests of 0.5–1.3 MB each; ingestRange stops starting new days at 240 s.
+export const maxDuration = 300;
 
 function authorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -11,7 +14,7 @@ function authorized(req: Request): boolean {
   return !!secret && got.length === want.length && timingSafeEqual(Buffer.from(got), Buffer.from(want));
 }
 
-/** Vercel Cron calls this daily (~3 am Toronto). Phase 2 adds the menu pull, phase 3 the planner. */
+/** Vercel Cron calls this daily (~3 am Toronto): pull today + 6 days. Phase 3 adds the planner. */
 export async function GET(req: Request) {
   if (!authorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
@@ -20,6 +23,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, skipped: "home mode" });
   }
 
-  // TODO(phase 2): ingest today + 6 days. TODO(phase 3): plan tomorrow.
-  return NextResponse.json({ ok: true, ingested: 0 });
+  const report = await ingestRange(today(), 7);
+  // TODO(phase 3): plan tomorrow.
+  // A non-2xx status makes failures show up in Vercel's cron and function logs.
+  return NextResponse.json(report, { status: report.ok ? 200 : 502 });
 }

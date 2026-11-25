@@ -15,7 +15,8 @@ import {
   milestone,
   settings,
 } from "@/db/schema";
-import { isValidIsoDate } from "@/lib/dates";
+import { isValidIsoDate, today } from "@/lib/dates";
+import { ingestRange } from "@/lib/menu/ingest";
 import { requireUser } from "@/lib/session";
 
 const isoDate = z.string().refine(isValidIsoDate, "bad date");
@@ -330,3 +331,19 @@ export async function deleteMilestone(id: number) {
   done();
 }
 
+
+/* ---------- menu ---------- */
+
+/**
+ * "Pull menu now" on Settings: the same 7-day ingest the cron runs, but it
+ * works in home mode too. Returns a one-line summary for useActionState.
+ */
+export async function pullMenu(): Promise<string> {
+  await requireUser();
+  const r = await ingestRange(today(), 7);
+  done();
+  const items = r.days.reduce((a, d) => a + d.meals.reduce((b, m) => b + m.items, 0), 0);
+  const errors = r.days.flatMap((d) => d.meals.filter((m) => m.error).map((m) => `${d.date} ${m.meal}: ${m.error}`));
+  const head = `${items} menu rows over ${r.days.length} days, ${r.requests} requests, ${(r.ms / 1000).toFixed(1)} s.`;
+  return errors.length ? `${head} ${errors.length} failed: ${errors.slice(0, 3).join("; ")}` : head;
+}

@@ -1,0 +1,23 @@
+curl --url $'https://api.elevate-dxp.com/api/mesh/c087f756-cc72-4649-a36f-3a41b700c519/graphql?query=query%20getLocationRecipes(%24campusUrlKey%3AString\u0021%24locationUrlKey%3AString\u0021%24date%3AString\u0021%24mealPeriod%3AInt%24viewType%3ACommerce_MenuViewType\u0021)%7BgetLocationRecipes(campusUrlKey%3A%24campusUrlKey%20locationUrlKey%3A%24locationUrlKey%20date%3A%24date%20mealPeriod%3A%24mealPeriod%20viewType%3A%24viewType)%7BlocationRecipesMap%7Bskus%20stationSkuMap%7Bid%20skus%20__typename%7DdateSkuMap%7Bdate%20stations%7Bid%20skus%7Bsimple%20configurable%7Bsku%20variants%20__typename%7D__typename%7D__typename%7D__typename%7D__typename%7Dproducts%7Bitems%7Bid%20name%20sku%20images%7Blabel%20roles%20url%20__typename%7Dattributes%7Bname%20value%20__typename%7D...on%20Catalog_SimpleProductView%7Bprice%7Bfinal%7Bamount%7Bcurrency%20value%20__typename%7D__typename%7D__typename%7D__typename%7D...on%20Catalog_ComplexProductView%7Boptions%7Btitle%20values%7Bid%20title%20...on%20Catalog_ProductViewOptionValueProduct%7Bproduct%7Bname%20sku%20attributes%7Bname%20value%20__typename%7Dprice%7Bfinal%7Bamount%7Bvalue%20currency%20__typename%7D__typename%7D__typename%7D__typename%7D__typename%7D__typename%7D__typename%7D__typename%7D__typename%7D__typename%7D__typename%7D%7D&operationName=getLocationRecipes&variables=%7B%22campusUrlKey%22%3A%22campus%22%2C%22locationUrlKey%22%3A%22teraanga-commons-dining-hall%22%2C%22date%22%3A%222026-11-24%22%2C%22mealPeriod%22%3A16%2C%22viewType%22%3A%22DAILY%22%7D&extensions=%7B%22clientLibrary%22%3A%7B%22name%22%3A%22%40apollo%2Fclient%22%2C%22version%22%3A%224.3.1%22%7D%7D' \
+  -H 'accept: application/graphql-response+json,application/json;q=0.9' \
+  -H 'accept-language: en-US,en;q=0.9' \
+  -H 'aem-elevate-clientpath: can/carleton/en' \
+  -H 'authorization;' \
+  -H 'content-type: application/json' \
+  -H 'magento-customer-group: b6589fc6ab0dc82cf12099d1c2d40ab994e8410c' \
+  -H 'magento-store-code: can_carleton' \
+  -H 'magento-store-view-code: can_carleton_en' \
+  -H 'magento-website-code: can_carleton' \
+  -H 'origin: https://carleton.mydininghub.ca' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://carleton.mydininghub.ca/' \
+  -H 'sec-ch-ua: "Not-A.Brand";v="99", "Google Chrome";v="157", "Chromium";v="157"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: cross-site' \
+  -H 'store: can_carleton_en' \
+  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36' \
+  -H 'x-api-key: ElevateAPIProd' \
+  -H 'x-magento-cache-id: 4116b076c2e1ac00394930b66b95c663cb2c7d8d34aef463a4d6e7bc86de52d3'

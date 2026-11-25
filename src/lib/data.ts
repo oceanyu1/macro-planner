@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, between, desc, eq } from "drizzle-orm";
+import { and, asc, between, count, desc, eq, max } from "drizzle-orm";
 import { db } from "@/db";
 import {
   application,
@@ -7,6 +7,8 @@ import {
   foodLog,
   habitDay,
   mealTemplate,
+  menuDay,
+  menuItem,
   milestone,
   settings,
 } from "@/db/schema";
@@ -71,4 +73,17 @@ export async function getTemplateLogged(date: string) {
     .select({ id: foodLog.id, name: foodLog.name, meal: foodLog.meal })
     .from(foodLog)
     .where(and(eq(foodLog.date, date), eq(foodLog.source, "template")));
+}
+
+/** Items ingested per date × meal, plus when the menu was last refreshed. */
+export async function getMenuCoverage(from: string, to: string) {
+  const [rows, [last]] = await Promise.all([
+    db
+      .select({ date: menuDay.date, meal: menuDay.meal, items: count() })
+      .from(menuDay)
+      .where(between(menuDay.date, from, to))
+      .groupBy(menuDay.date, menuDay.meal),
+    db.select({ at: max(menuItem.updatedAt) }).from(menuItem),
+  ]);
+  return { rows, lastUpdated: last?.at ?? null };
 }
