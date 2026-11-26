@@ -89,6 +89,10 @@ export default async function TodayPage({ searchParams }: PageProps<"/">) {
   const { meals: mealBudget, day: dayBudget } = mealTargets(settings);
   const planTotals = sumTotals(plans.map((p) => p.totals ?? { proteinG: 0, calories: 0, sodiumMg: 0, potassiumMg: 0 }));
   const planWarnings = plans.length ? dayWarnings(planTotals, dayBudget) : [];
+  // Potassium is read live from the dishes, so Review-screen changes show without re-planning.
+  const plannedPicks = plans.flatMap((p) => p.items);
+  const planK = plannedPicks.reduce((a, i) => a + (planItems.get(i.itemId)?.kMgEst ?? 0) * i.servings, 0);
+  const planKUnknown = plannedPicks.filter((i) => planItems.get(i.itemId)?.kMgEst == null).length;
 
   return (
     <div className="space-y-4">
@@ -152,7 +156,10 @@ export default async function TodayPage({ searchParams }: PageProps<"/">) {
             <h2 className="h2">Plan</h2>
             {plans.length > 0 && (
               <span className="text-xs tabular-nums text-muted">
-                {Math.round(planTotals.proteinG)} g · {planTotals.calories} kcal · {planTotals.sodiumMg} mg Na
+                {Math.round(planTotals.proteinG)} g · {planTotals.calories} kcal · {planTotals.sodiumMg} mg Na ·{" "}
+                <span className="text-est">
+                  ~{Math.round(planK)} mg K{planKUnknown > 0 && ` (+${planKUnknown} ?)`}
+                </span>
               </span>
             )}
           </div>
@@ -239,7 +246,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/">) {
                             <span className="text-right text-xs tabular-nums text-muted">
                               {Math.round((it.proteinG ?? 0) * n * 10) / 10}g
                               <br />
-                              {Math.round((it.calories ?? 0) * n)} kcal · {Math.round((it.sodiumMg ?? 0) * n)}mg Na
+                              {Math.round((it.calories ?? 0) * n)} kcal · {Math.round((it.sodiumMg ?? 0) * n)}mg Na ·{" "}
+                              <span className="text-est">{it.kMgEst == null ? "?" : `~${it.kMgEst * n}`}K</span>
                             </span>
                           </Submit>
                         </form>

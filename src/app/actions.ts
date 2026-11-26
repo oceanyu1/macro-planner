@@ -20,6 +20,7 @@ import {
 import { addDays, isValidIsoDate, today } from "@/lib/dates";
 import { ingestRange } from "@/lib/menu/ingest";
 import { generatePlan } from "@/lib/plan-service";
+import { confirmPotassiumMatches, estimateMenuPotassium, setPotassiumMatch } from "@/lib/potassium-service";
 import { requireUser } from "@/lib/session";
 
 const isoDate = z.string().refine(isValidIsoDate, "bad date");
@@ -345,12 +346,15 @@ export async function pullMenu(): Promise<string> {
   await requireUser();
   const start = today();
   const r = await ingestRange(start, 7);
+  const k = await estimateMenuPotassium();
   await generatePlan(start);
   await generatePlan(addDays(start, 1));
   done();
   const items = r.days.reduce((a, d) => a + d.meals.reduce((b, m) => b + m.items, 0), 0);
   const errors = r.days.flatMap((d) => d.meals.filter((m) => m.error).map((m) => `${d.date} ${m.meal}: ${m.error}`));
-  const head = `${items} menu rows over ${r.days.length} days, ${r.requests} requests, ${(r.ms / 1000).toFixed(1)} s.`;
+  const head =
+    `${items} menu rows over ${r.days.length} days, ${r.requests} requests, ${(r.ms / 1000).toFixed(1)} s.` +
+    (k.newMatches ? ` Potassium estimated for ${k.newMatches} new dishes.` : "");
   return errors.length ? `${head} ${errors.length} failed: ${errors.slice(0, 3).join("; ")}` : head;
 }
 
@@ -439,5 +443,29 @@ export async function togglePlanItem(date: string, mealName: string, itemId: num
     .update(plan)
     .set({ locked: ticked > 0 })
     .where(and(eq(plan.date, d), eq(plan.meal, m)));
+  done();
+}
+
+/* ---------- potassium review ---------- */
+
+const kKey = z.string().trim().min(1).max(200);
+
+/** "Looks right": keep the suggested CNF food for this dish. */
+export async function confirmKMatch(key: string) {
+  await requireUser();
+  await confirmPotassiumMatches([kKey.parse(key)]);
+  revalidatePath("/settings/potassium");
+}
+
+export async function confirmAllKMatches() {
+  await requireUser();
+  await confirmPotassiumMatches("all");
+  revalidatePath("/settings/potassium");
+}
+
+/** Pick a different CNF food for a dish (null = no good match: potassium unknown). */
+export async function changeKMatch(key: string, foodCode: number | null) {
+  await requireUser();
+  await setPotassiumMatch(kKey.parse(key), z.number().int().positive().nullable().parse(foodCode));
   done();
 }

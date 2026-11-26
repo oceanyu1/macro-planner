@@ -25,7 +25,7 @@ Private, single-user PWA. It plans what to eat at the Teraanga Commons dining ha
 |---|---|
 | 1. Foundation: auth, schema, habits, home-mode meals, PWA | **Done and deployed** |
 | 2. Menu ingest | **Done.** Verified live 2026-11-24 via Settings → Pull menu now (7 days, ~40 B / ~75 L / ~80 D items). Cron path not yet exercised (mode is still `home`) |
-| 3. Planner v1 (greedy), tick-off from plan, potassium matching | **In progress.** Planner, plan UI, tick-off, ✕ reject/re-plan committed (not yet tried in the browser). **Potassium (CNF matching + Review screen) in progress** |
+| 3. Planner v1 (greedy), tick-off from plan, potassium matching | **Done.** Potassium verified in the DB 2026-11-25 (390 dishes matched, 532/563 items estimated). The dining-mode plan UI (tick-off, ✕) hasn't been tried in the browser by the user yet |
 | 4. LLM planner (v2), push reminders, weekly report | Not started |
 
 - **Later ideas** (daily speaking-practice text, roadmap.sh backend checklist) are in `BACKLOG.md`. Don't build them until asked.
@@ -38,6 +38,7 @@ Private, single-user PWA. It plans what to eat at the Teraanga Commons dining ha
 - **Targets:** protein 140 g, calories 1750 (±100), sodium under 2300 mg, potassium ~3400 mg. Protein split 30/45/45 + 20 g snack. Blocked foods: pork, tofu.
 - **Menu data:** the menu item *details* panel gives serving size, calories, fat, sat/trans fat, cholesterol, sodium, carbs, fiber, sugars, protein and an ingredients line. **No potassium.** Sample: `fixtures/panel-bbq-baked-chicken.txt`.
 - **Terms of Use:** they allow automated personal access.
+- **Potassium matches are not the user's job** (2026-11-25: "I'm not a potassium pro"). Guesses are used automatically; the Review screen is optional and not promoted. The agent checks matches by reading `k_mapping` and fixes bad ones (via the matcher or `setPotassiumMatch`).
 - **Old tracker:** there is none to migrate. Ignore the plan's "keep current tracker page" question.
 - **Modes:** home mode (Toronto, now) uses a hand-edited meal template. Dining mode starts at January 2027 move-in. `settings.mode` is the switch, and the cron skips while it is `home`.
 - **Habit defaults (assumed, user may change):** water 3 L, 3 neck sets, 1 LeetCode a day, gym 4 a week on an upper/lower rotation. Tretinoin ramp is every 3rd night for weeks 1–2, every other night for weeks 3–4, then nightly (`src/lib/habits.ts`).
@@ -61,6 +62,9 @@ src/lib/nutrition.ts         nutrition-panel parser, serving→grams, potassium 
 src/lib/habits.ts            tretinoin ramp, gym rotation, streaks      src/lib/dates.ts  Toronto-time date helpers
 src/lib/planner.ts           pure planner v1 (planDay, budgets, blocked-food aliases); tested on fixtures
 src/lib/plan-service.ts      generatePlan(date): load menu + existing plan rows, keep locked/rejected, save plan rows
+src/lib/potassium.ts         pure CNF matcher (suggestCnf, searchCnf, potassiumKey); data in src/data/cnf-potassium.json
+src/lib/potassium-service.ts estimateMenuPotassium(): new dish → k_mapping guess (unconfirmed); sets menu_item.k_mg_est
+scripts/build-cnf.mjs        rebuilds src/data/cnf-potassium.json from the CNF 2015 CSV zip (URL in the file)
 src/app/(app)/               Today (/), /week, /goals, /settings   src/app/login/
 src/lib/menu/api.ts          endpoint, headers, query, meal period ids, station names
 src/lib/menu/parse.ts        pure response parser (tested on fixtures)   kind.ts  protein/veg/starch/dessert classifier
@@ -117,7 +121,7 @@ As built (`src/lib/planner.ts`):
 - Protein: exhaustive search over ≤ 2 protein dishes × 1–2 servings × each serving size (cheap: ≤ ~2k combos). Protein sources are kind protein/dairy with ≥ 5 g and ≥ 5 g per 100 kcal. Low-sodium protein is worth some overshoot, so days land ~15–20 g over the meal target.
 - Blocked foods match name + ingredients, and **pork also blocks its aliases** (bacon, ham, pepperoni, chorizo, sausage, salami, peameal, chasu…) unless the name says turkey/chicken/beef/plant-based. The menu's ingredient lists say "Peameal bacon", not "pork".
 - A meal with anything ticked off is `plan.locked` and kept as is on re-plan. ✕ adds the dish's `source_id` to `plan.rejected` and re-plans the day. Cron and "Pull menu now" re-plan today + tomorrow.
-- Potassium is 0 / unknown until CNF matching fills `menu_item.k_mg_est`.
+- Potassium: each **dish name** (`potassiumKey`, not the first ingredient: rice/pasta/oatmeal all start with "Water") maps to one CNF 2015 food in `k_mapping`. Estimate = CNF mg/100 g × serving grams; "each/slice/piece" servings stay unknown. The matcher prefers cooked forms and the food group that fits `kind`, and penalises dry/uncooked, organ meats, other forms (juice, bar, extract…) and extra words. Every ingest runs `autoMatch` on each unconfirmed dish (new or old), so matcher improvements apply on the next pull: `KNOWN_MATCHES` (hand-checked, in `potassium.ts`) wins, else the scorer's best if score ≥ `MIN_AUTO_SCORE` (2.5), else unknown. Fix bad matches by adding to `KNOWN_MATCHES` or improving the scorer, not by editing `k_mapping`. All 390 dishes from the first full pull were reviewed on 2026-11-25; /settings/potassium confirms, changes (suggestions or CNF search) or sets "no match". Today reads K live from `menu_item`, so plans don't need re-planning after a change. CNF is Open Government Licence – Canada: keep the attribution line on the Review screen.
 
 Original design notes:
 

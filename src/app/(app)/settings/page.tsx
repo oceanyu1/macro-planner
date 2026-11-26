@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { signOut } from "@/auth";
 import { addTemplateItem, deleteFavourite, deleteTemplateItem, saveSettings } from "@/app/actions";
 import { PullMenuButton } from "@/components/pull-menu";
@@ -147,6 +148,10 @@ export default async function SettingsPage() {
           Pulled nightly in dining mode. The button works in either mode.
         </p>
         <PullMenuButton />
+        <Link href="/settings/potassium" className="flex items-center justify-between text-xs text-muted">
+          <span>Potassium sources (optional)</span>
+          <span>›</span>
+        </Link>
       </section>
 
       {/* home template */}

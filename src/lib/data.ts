@@ -6,6 +6,7 @@ import {
   favouriteFood,
   foodLog,
   habitDay,
+  kMapping,
   mealTemplate,
   menuDay,
   menuItem,
@@ -135,4 +136,23 @@ export async function getPlanLogged(date: string) {
     .select({ id: foodLog.id, meal: foodLog.meal, menuItemId: foodLog.menuItemId })
     .from(foodLog)
     .where(and(eq(foodLog.date, date), eq(foodLog.source, "plan")));
+}
+
+/** Potassium review: every dish-name match, plus the menu items that use it. */
+export async function getPotassiumReview() {
+  const [maps, items] = await Promise.all([
+    db.select().from(kMapping).orderBy(asc(kMapping.confirmed), asc(kMapping.ingredientText)),
+    db
+      .select({
+        id: menuItem.id,
+        name: menuItem.name,
+        kind: menuItem.kind,
+        ingredients: menuItem.ingredients,
+        servingSize: menuItem.servingSize,
+        kMgEst: menuItem.kMgEst,
+      })
+      .from(menuItem)
+      .orderBy(asc(menuItem.servingAmount)),
+  ]);
+  return { maps, items };
 }
