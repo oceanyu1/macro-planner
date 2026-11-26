@@ -14,7 +14,7 @@ export type IngestReport = { ok: boolean; days: DayReport[]; requests: number; m
 
 const FETCH_TIMEOUT_MS = 20_000;
 /** Stop starting new days after this long, so the function finishes inside maxDuration. */
-const BUDGET_MS = 240_000;
+const BUDGET_MS = 150_000; // leaves the rest of the 300 s function for the Claude plans
 
 /** Fetch and parse one date × meal period. Retries once on a network error or 5xx. */
 async function fetchMeal(date: string, period: number, counter: { n: number }) {

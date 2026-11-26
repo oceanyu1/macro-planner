@@ -17,9 +17,9 @@ import {
   plan,
   settings,
 } from "@/db/schema";
-import { addDays, isValidIsoDate, today } from "@/lib/dates";
+import { isValidIsoDate, today } from "@/lib/dates";
 import { ingestRange } from "@/lib/menu/ingest";
-import { generatePlan } from "@/lib/plan-service";
+import { generatePlan, refreshPlans, setMealSkipped } from "@/lib/plan-service";
 import { confirmPotassiumMatches, estimateMenuPotassium, setPotassiumMatch } from "@/lib/potassium-service";
 import { requireUser } from "@/lib/session";
 
@@ -347,8 +347,7 @@ export async function pullMenu(): Promise<string> {
   const start = today();
   const r = await ingestRange(start, 7);
   const k = await estimateMenuPotassium();
-  await generatePlan(start);
-  await generatePlan(addDays(start, 1));
+  await refreshPlans(start);
   done();
   const items = r.days.reduce((a, d) => a + d.meals.reduce((b, m) => b + m.items, 0), 0);
   const errors = r.days.flatMap((d) => d.meals.filter((m) => m.error).map((m) => `${d.date} ${m.meal}: ${m.error}`));
@@ -362,10 +361,17 @@ export async function pullMenu(): Promise<string> {
 
 const planMeal = z.enum(["breakfast", "lunch", "dinner"]);
 
-/** Plan (or re-plan) a whole day. Locked meals and rejections are kept. */
+/** Plan (or re-plan) a whole day with Claude (falls back to greedy). Locked meals, skips and rejections are kept. */
 export async function planDate(date: string) {
   await requireUser();
-  await generatePlan(isoDate.parse(date));
+  await generatePlan(isoDate.parse(date), { engine: "llm" });
+  done();
+}
+
+/** "Skipped this meal" (or undo): move its share to the remaining meals and re-plan them. */
+export async function skipMeal(date: string, mealName: string, skipped: boolean) {
+  await requireUser();
+  await setMealSkipped(isoDate.parse(date), planMeal.parse(mealName), z.boolean().parse(skipped));
   done();
 }
 
@@ -379,7 +385,8 @@ export async function rejectPlanItem(date: string, mealName: string, sourceId: s
     .update(plan)
     .set({ rejected: sql`array_append(array_remove(${plan.rejected}, ${s}), ${s})` })
     .where(and(eq(plan.date, d), eq(plan.meal, m)));
-  await generatePlan(d);
+  // Instant: re-plan just this meal with the greedy planner; the other meals stay as they are.
+  await generatePlan(d, { only: [m] });
   done();
 }
 
@@ -387,11 +394,12 @@ export async function rejectPlanItem(date: string, mealName: string, sourceId: s
 export async function clearRejected(date: string, mealName: string) {
   await requireUser();
   const d = isoDate.parse(date);
+  const m = planMeal.parse(mealName);
   await db
     .update(plan)
     .set({ rejected: [] })
-    .where(and(eq(plan.date, d), eq(plan.meal, planMeal.parse(mealName))));
-  await generatePlan(d);
+    .where(and(eq(plan.date, d), eq(plan.meal, m)));
+  await generatePlan(d, { only: [m] });
   done();
 }
 

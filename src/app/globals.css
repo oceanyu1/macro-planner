@@ -1,36 +1,36 @@
 @import "tailwindcss";
 
+/*
+ * Light, iOS-style theme (2026-11 redesign): grouped grey background, white
+ * rounded cards, system font. Light only, on purpose: the user asked for it.
+ * Text colours are picked to pass 4.5:1 on both #FFFFFF and #F2F2F7.
+ */
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
+  color-scheme: light;
+  --background: #f2f2f7;
+  --foreground: #1c1c1e; /* primary text */
+  --secondary: #3a3a3c; /* secondary text: body copy, quiet actions */
   --card: #ffffff;
-  --muted: #78716c;
-  --line: #e7e5e4;
-  --accent: #2563eb;
-  --good: #16a34a;
-  --warn: #d97706;
-  --bad: #dc2626;
-  --est: #b45309; /* potassium estimates: always this colour, always with "~" */
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0c0a09;
-    --foreground: #f5f5f4;
-    --card: #1c1917;
-    --muted: #a8a29e;
-    --line: #292524;
-    --accent: #60a5fa;
-    --good: #4ade80;
-    --warn: #fbbf24;
-    --bad: #f87171;
-    --est: #fbbf24;
-  }
+  --muted: #636366; /* muted text: meta, captions */
+  --line: #e5e5ea;
+  --accent: #0066cc;
+  --good: #1e7b34;
+  --warn: #b25000;
+  --bad: #c4281c;
+  --est: #b25000; /* potassium estimates: always this colour, always with "~" */
+  /* bar and ring fills (shapes, not text) */
+  --fill-green: #34c759;
+  --fill-orange: #ff9500;
+  --fill-yellow: #ffcc00;
+  --fill-teal: #32ade6;
+  --fill-red: #ff3b30;
+  --control: #8e8e93; /* unticked circles, ✕ icons: 3:1 on white */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-secondary: var(--secondary);
   --color-card: var(--card);
   --color-muted: var(--muted);
   --color-line: var(--line);
@@ -39,8 +39,22 @@
   --color-warn: var(--warn);
   --color-bad: var(--bad);
   --color-est: var(--est);
-  --font-sans: var(--font-geist-sans);
+  --color-fill-green: var(--fill-green);
+  --color-fill-orange: var(--fill-orange);
+  --color-fill-yellow: var(--fill-yellow);
+  --color-fill-teal: var(--fill-teal);
+  --color-fill-red: var(--fill-red);
+  --color-control: var(--control);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
+  /* one easing curve and one feedback duration for every `transition-*` */
+  --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  --default-transition-duration: 150ms;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 body {
@@ -55,14 +69,15 @@ textarea {
   font-size: 16px; /* stops iOS zooming into fields */
 }
 
+/* radius: cards 16, controls 10, inner boxes 12; padding on the 4 px grid */
 @utility card {
-  @apply rounded-2xl border border-line bg-card p-4;
+  @apply rounded-2xl bg-card p-5;
 }
 @utility btn {
-  @apply inline-flex min-h-10 items-center justify-center rounded-xl border border-line bg-card px-3 text-sm font-medium transition active:scale-95 disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center rounded-[10px] bg-background px-3 text-[15px] font-medium transition-[transform,background-color,opacity] active:scale-[0.98] disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply btn border-transparent bg-accent text-white;
+  @apply btn bg-accent text-white;
 }
 @utility field {
   @apply w-full rounded-xl border border-line bg-background px-3 py-2;
@@ -70,6 +85,11 @@ textarea {
 @utility label {
   @apply text-xs font-medium text-muted;
 }
+/* small group label: sentence case, no tracking */
 @utility h2 {
-  @apply text-sm font-semibold uppercase tracking-wide text-muted;
+  @apply text-[13px] leading-5 font-medium text-muted;
+}
+/* section title, e.g. "Lunch", "Habits": size carries the hierarchy, not weight */
+@utility section-title {
+  @apply text-[22px] leading-7 font-medium;
 }

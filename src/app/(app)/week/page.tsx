@@ -41,7 +41,7 @@ export default async function WeekPage({ searchParams }: PageProps<"/week">) {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:max-w-2xl">
       <header className="flex items-center justify-between">
         <Link href={`/week?date=${addDays(days[0], -7)}`} className="btn w-10" aria-label="Previous week">
           ‹

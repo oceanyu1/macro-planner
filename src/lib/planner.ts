@@ -39,10 +39,18 @@ export type Candidate = {
   ingredients: string | null;
 };
 
-export type Role = "protein" | "vegetable" | "starch";
+export type Role = "protein" | "vegetable" | "starch" | "other";
 export type Pick = { item: Candidate; servings: number; role: Role };
 export type MealTarget = { proteinG: number; calories: number; sodiumMg: number };
-export type MealPlan = { meal: PlanMeal; picks: Pick[]; totals: Totals; target: MealTarget; fixed: boolean; notes: string[] };
+export type MealPlan = {
+  meal: PlanMeal;
+  picks: Pick[];
+  totals: Totals;
+  target: MealTarget;
+  fixed: boolean;
+  skipped?: boolean;
+  notes: string[];
+};
 export type DayPlan = { meals: Record<PlanMeal, MealPlan>; totals: Totals; budget: DayBudget; warnings: string[] };
 export type DayBudget = { proteinG: number; caloriesMin: number; caloriesMax: number; sodiumMg: number };
 
@@ -62,8 +70,10 @@ export type PlanInput = {
   menu: Record<PlanMeal, Candidate[]>;
   /** Dish source ids rejected per meal (✕ in the UI). */
   rejected?: Partial<Record<PlanMeal, string[]>>;
-  /** Meals already (partly) eaten: keep these picks exactly. */
+  /** Meals already (partly) eaten, or held while another meal is re-planned: keep these picks exactly. */
   fixed?: Partial<Record<PlanMeal, Pick[]>>;
+  /** Meals not eaten at all (e.g. skipped breakfast): their share moves to the other meals. */
+  skipped?: PlanMeal[];
 };
 
 /** Plan 5–10 g above target as a buffer (design plan). */
@@ -73,19 +83,27 @@ const MAX_PROTEIN_DISHES = 2;
 
 /* ---------- budgets ---------- */
 
-export function mealTargets(s: PlannerSettings): { meals: Record<PlanMeal, MealTarget>; day: DayBudget } {
+export function mealTargets(
+  s: PlannerSettings,
+  skipped: PlanMeal[] = [],
+): { meals: Record<PlanMeal, MealTarget>; day: DayBudget } {
   const split = s.proteinSplit;
-  const mealSum = PLAN_MEALS.reduce((a, m) => a + (split[m] ?? 0), 0) || 1;
+  const base = (m: PlanMeal) => split[m] ?? 0;
+  const mealSum = PLAN_MEALS.reduce((a, m) => a + base(m), 0) || 1;
   const allSum = mealSum + (split.snack ?? 0);
-  const share = (m: PlanMeal) => (split[m] ?? 0) / allSum;
   const mealsShare = mealSum / allSum;
+  // A skipped meal's share moves to the remaining meals, in proportion to their own shares.
+  const skippedSum = skipped.reduce((a, m) => a + base(m), 0);
+  const openSum = mealSum - skippedSum;
+  const eff = (m: PlanMeal) =>
+    skipped.includes(m) ? 0 : base(m) + (openSum > 0 ? (skippedSum * base(m)) / openSum : 0);
   const meals = Object.fromEntries(
     PLAN_MEALS.map((m) => [
       m,
       {
-        proteinG: (split[m] ?? 0) + (PROTEIN_BUFFER_G * (split[m] ?? 0)) / mealSum,
-        calories: s.calorieTarget * share(m),
-        sodiumMg: s.sodiumCapMg * share(m),
+        proteinG: eff(m) + (PROTEIN_BUFFER_G * eff(m)) / mealSum,
+        calories: (s.calorieTarget * eff(m)) / allSum,
+        sodiumMg: (s.sodiumCapMg * eff(m)) / allSum,
       },
     ]),
   ) as Record<PlanMeal, MealTarget>;
@@ -286,15 +304,20 @@ export function planMeal(
 
 export function planDay(input: PlanInput): DayPlan {
   const { settings: s, menu } = input;
-  const { meals: targets, day: budget } = mealTargets(s);
+  const skipped = input.skipped ?? [];
+  const { meals: targets, day: budget } = mealTargets(s, skipped);
   const rejected = input.rejected ?? {};
   const meals = {} as Record<PlanMeal, MealPlan>;
 
   for (const m of PLAN_MEALS) {
     const fixed = input.fixed?.[m];
-    meals[m] = fixed
-      ? { meal: m, picks: fixed, totals: totalsOf(fixed), target: targets[m], fixed: true, notes: [] }
-      : planMeal(m, menu[m] ?? [], targets[m], s, rejected[m]);
+    if (skipped.includes(m)) {
+      meals[m] = { meal: m, picks: [], totals: totalsOf([]), target: targets[m], fixed: true, skipped: true, notes: [] };
+    } else if (fixed) {
+      meals[m] = { meal: m, picks: fixed, totals: totalsOf(fixed), target: targets[m], fixed: true, notes: [] };
+    } else {
+      meals[m] = planMeal(m, menu[m] ?? [], targets[m], s, rejected[m]);
+    }
   }
 
   const dayTotals = () => PLAN_MEALS.reduce((a, m) => addTotals(a, meals[m].totals), totalsOf([]));
@@ -308,8 +331,8 @@ export function planDay(input: PlanInput): DayPlan {
     )[0];
     if (!worst) break;
     const replanned = planMeal(worst, menu[worst] ?? [], targets[worst], s, rejected[worst], 1 + round * 3);
-    if (replanned.totals.sodiumMg >= meals[worst].totals.sodiumMg) break;
-    meals[worst] = replanned;
+    // No better at this weight: try the next, stronger one rather than giving up.
+    if (replanned.totals.sodiumMg < meals[worst].totals.sodiumMg) meals[worst] = replanned;
   }
   // ...then drop starches, saltiest first.
   while (dayTotals().sodiumMg > budget.sodiumMg) {

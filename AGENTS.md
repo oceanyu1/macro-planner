@@ -26,11 +26,11 @@ Private, single-user PWA. It plans what to eat at the Teraanga Commons dining ha
 | 1. Foundation: auth, schema, habits, home-mode meals, PWA | **Done and deployed** |
 | 2. Menu ingest | **Done.** Verified live 2026-11-24 via Settings → Pull menu now (7 days, ~40 B / ~75 L / ~80 D items). Cron path not yet exercised (mode is still `home`) |
 | 3. Planner v1 (greedy), tick-off from plan, potassium matching | **Done.** Potassium verified in the DB 2026-11-25 (390 dishes matched, 532/563 items estimated). The dining-mode plan UI (tick-off, ✕) hasn't been tried in the browser by the user yet |
-| 4. LLM planner (v2), push reminders, weekly report | Not started |
+| 4. LLM planner (v2), push reminders, weekly report | **In progress.** LLM planner, "Skip meal", the light iOS redesign, the laptop layout and the two-half Today page are committed and deployed (2026-11-25). Next: push reminders (meals, tretinoin at night, gym; ask the user's meal times first), then the weekly report |
 
 - **Later ideas** (daily speaking-practice text, roadmap.sh backend checklist) are in `BACKLOG.md`. Don't build them until asked.
 - **Production:** https://macro-planner-three-pi.vercel.app (Vercel Hobby, region `pdx1`). **Repo:** github.com/oceanyu1/macro-planner, `main`.
-- **Supabase:** Postgres 17, West US (Oregon). Migrations `0000_init`, `0001_lock_rest_api` and `0002_plan_rejected` are applied.
+- **Supabase:** Postgres 17, West US (Oregon). Migrations `0000_init` through `0003_plan_skipped` are applied.
 - iOS white-screen hang (postgres.js pipelining) is fixed by `d45c349`; user confirmed on the phone 2026-11-24.
 
 ## Decisions already made (don't re-ask)
@@ -39,6 +39,7 @@ Private, single-user PWA. It plans what to eat at the Teraanga Commons dining ha
 - **Menu data:** the menu item *details* panel gives serving size, calories, fat, sat/trans fat, cholesterol, sodium, carbs, fiber, sugars, protein and an ingredients line. **No potassium.** Sample: `fixtures/panel-bbq-baked-chicken.txt`.
 - **Terms of Use:** they allow automated personal access.
 - **Potassium matches are not the user's job** (2026-11-25: "I'm not a potassium pro"). Guesses are used automatically; the Review screen is optional and not promoted. The agent checks matches by reading `k_mapping` and fixes bad ones (via the matcher or `setPotassiumMatch`).
+- **Phase 4 choices (2026-11-25):** LLM planner on **Claude Sonnet 5.5** (user's choice; Opus felt like overkill). Push reminders for **meals, tretinoin (night) and gym only**: no water reminders, no email. Weekly report is a page + push, no email. Meals are sometimes skipped (usually breakfast): "Skipped this meal" moves that meal's share to the rest of the day.
 - **Old tracker:** there is none to migrate. Ignore the plan's "keep current tracker page" question.
 - **Modes:** home mode (Toronto, now) uses a hand-edited meal template. Dining mode starts at January 2027 move-in. `settings.mode` is the switch, and the cron skips while it is `home`.
 - **Habit defaults (assumed, user may change):** water 3 L, 3 neck sets, 1 LeetCode a day, gym 4 a week on an upper/lower rotation. Tretinoin ramp is every 3rd night for weeks 1–2, every other night for weeks 3–4, then nightly (`src/lib/habits.ts`).
@@ -61,7 +62,9 @@ src/lib/data.ts              read queries        src/app/actions.ts   all writes
 src/lib/nutrition.ts         nutrition-panel parser, serving→grams, potassium estimate, totals, K:Na
 src/lib/habits.ts            tretinoin ramp, gym rotation, streaks      src/lib/dates.ts  Toronto-time date helpers
 src/lib/planner.ts           pure planner v1 (planDay, budgets, blocked-food aliases); tested on fixtures
-src/lib/plan-service.ts      generatePlan(date): load menu + existing plan rows, keep locked/rejected, save plan rows
+src/lib/plan-service.ts      generatePlan(date, {engine, only}): keeps locked/skipped/rejected, saves plan rows; refreshPlans, setMealSkipped
+src/lib/llm-plan.ts          pure LLM-planner parts: prompt, zod output schema, checkLlmPlan (recomputes totals, lists rule/target misses)
+src/lib/llm-plan-service.ts  planDayWithClaude: Sonnet 5.5 structured output, effort medium, ≤3 attempts / 60 s, else ok:false → greedy
 src/lib/potassium.ts         pure CNF matcher (suggestCnf, searchCnf, potassiumKey); data in src/data/cnf-potassium.json
 src/lib/potassium-service.ts estimateMenuPotassium(): new dish → k_mapping guess (unconfirmed); sets menu_item.k_mg_est
 scripts/build-cnf.mjs        rebuilds src/data/cnf-potassium.json from the CNF 2015 CSV zip (URL in the file)
@@ -90,6 +93,11 @@ Env (`.env.local` locally and in Vercel; see `.env.example`): `DATABASE_URL` (tr
 - **RLS is enabled with no policies on every table** (migration 0001) so Supabase's public REST API can't read them. The app connects as `postgres`, which bypasses RLS. **New tables need `ENABLE ROW LEVEL SECURITY` in a custom migration** (`drizzle-kit generate --custom`).
 - **Don't use Supabase's plain "Direct connection" string** (`db.<ref>.supabase.co`): it's IPv6-only on the free tier. Use the pooler strings.
 - **Tailwind v4:** custom classes that are `@apply`-ed elsewhere (`btn`, `card`, `field`, `label`, `h2`, `btn-primary`) must be `@utility`, not `@layer components`. Potassium estimates always render with `~` in the `text-est` (amber) colour.
+- **Theme is light-only, iOS style** (2026-11-25 redesign, user's request; design canvas "Today Page Redesign" on claude.ai). Tokens live in `globals.css` `:root` (no dark block on purpose); bar/ring fills are `bg-fill-*`, unticked controls `border-control`. Shared pieces: `Ring`, `Bar`, `BottomNav` in `src/components/ui.tsx` (client); `Icon` in `src/components/icons.tsx` (no "use client": a server component can't read `Icon.x` off an object exported from a client module, it arrives as undefined); large section headings use the `section-title` utility. Text colours are chosen to pass 4.5:1 on `#fff` and `#f2f2f7`: keep using `text-muted`/`text-est`/`text-good`/`text-warn`, not the bright `fill-*` colours, for text.
+- **Design rules (unslop pass, 2026-11-25), keep them:** 4 px grid; cards `card` (p-5, rounded-2xl), controls `rounded-[10px]`; weights 400/500, 600 only on the page title, no 700; sentence case, no tracked uppercase; three text roles (`foreground`, `secondary`, `muted`); the accent only on the protein ring, one primary action per card, ticks and the active tab (quiet actions are `text-secondary`); colour otherwise lives in the nutrition bars; the round `<Tick>` (icons.tsx) is the one "done" mark; icons 18 px / 1.5 stroke (tab bar 24); whole-number grams; short lines end without a period; no greeting headline; transitions use the theme's one curve and 150 ms, and never animate layout properties.
+- **Two layouts, one DOM.** Phone: one column + `BottomNav`. Laptop (`lg`, ≥1024 px): `Sidebar` + dashboard. Today has two halves (user's call, 2026-11-25; they rejected a mixed dashboard and a checklist). **Your day:** `[read | progress]`, where the progress card is a segmented ring, one segment per non-nutrition goal (water, neck sets, LeetCode, gym: done when logged or the week's quota is met, tretinoin on its nights, Goals milestones due today/overdue or done today), then the habit tiles plus a "Goals due" tile. **Nutrition** is a divided section with its own heading: `[eaten | plan]`, `[breakfast | lunch | dinner]` (one card per meal: rows show tick, cleaned name via `menu/display.ts`, serving and protein; sodium/potassium, Claude's note and "Skip meal" in the card footer; ✕ on hover on laptop), then a one-line snack strip. Phone order: header, progress, read, habits, nutrition (the read card is after progress in the DOM and `lg:order-first`). Habits will grow: the user plans to add more, and each new one should also become a progress segment. Week/Goals/Settings cap themselves at `lg:max-w-2xl`. Design canvas: "Dashboard (laptop)" artboard.
+- **Today's read is a placeholder** (`src/lib/reading.ts`, `getTodaysRead(date)` returns one fixed real article with `placeholder: true`). Source (feeds, Claude's pick, a curated list) and whether to track reading are undecided; ask before building either.
+- **Tailwind v4 didn't generate `[&+&]:…` sibling variants.** For "between rows" borders use a plain CSS rule in `globals.css`, then check the built CSS.
 - **`"use server"` files may only export async functions.**
 - **npm 10 crashes (`edgesOut`) installing vitest 4.** Stay on vitest 3.
 - **iOS home-screen apps have their own cookie jar.** The installed app must sign in separately from Safari.
@@ -122,6 +130,12 @@ As built (`src/lib/planner.ts`):
 - Blocked foods match name + ingredients, and **pork also blocks its aliases** (bacon, ham, pepperoni, chorizo, sausage, salami, peameal, chasu…) unless the name says turkey/chicken/beef/plant-based. The menu's ingredient lists say "Peameal bacon", not "pork".
 - A meal with anything ticked off is `plan.locked` and kept as is on re-plan. ✕ adds the dish's `source_id` to `plan.rejected` and re-plans the day. Cron and "Pull menu now" re-plan today + tomorrow.
 - Potassium: each **dish name** (`potassiumKey`, not the first ingredient: rice/pasta/oatmeal all start with "Water") maps to one CNF 2015 food in `k_mapping`. Estimate = CNF mg/100 g × serving grams; "each/slice/piece" servings stay unknown. The matcher prefers cooked forms and the food group that fits `kind`, and penalises dry/uncooked, organ meats, other forms (juice, bar, extract…) and extra words. Every ingest runs `autoMatch` on each unconfirmed dish (new or old), so matcher improvements apply on the next pull: `KNOWN_MATCHES` (hand-checked, in `potassium.ts`) wins, else the scorer's best if score ≥ `MIN_AUTO_SCORE` (2.5), else unknown. Fix bad matches by adding to `KNOWN_MATCHES` or improving the scorer, not by editing `k_mapping`. All 390 dishes from the first full pull were reviewed on 2026-11-25; /settings/potassium confirms, changes (suggestions or CNF search) or sets "no match". Today reads K live from `menu_item`, so plans don't need re-planning after a change. CNF is Open Government Licence – Canada: keep the attribution line on the Review screen.
+
+Planner v2 (LLM), as built:
+- **Which engine where:** Claude for the nightly cron and "Pull menu now" (`refreshPlans`: tomorrow always, today only if it has no plan, so today's plan doesn't change under you), "Plan this day", "Re-plan day" and "Skipped this meal". ✕ and "Bring back" stay on the instant greedy planner and re-plan **only that meal** (`only: [meal]`), holding the others.
+- Claude sees only the plannable menu (no blocked, rejected, dessert, beverage or condiment dishes, no unknown nutrition), the meal-share targets, fixed/skipped meals and the last 4 days of logged food. Its output is ids + servings (1|2) + a one-line note per meal, stored in `plan.reason`; `plan.generator` is `llm` or `greedy`.
+- `checkLlmPlan` never trusts the model's numbers: ids must be on that meal's plannable menu, no duplicates, ≤ 2 protein dishes, a vegetable at lunch/dinner, each meal ≥ 60% of its share, and `dayWarnings` empty. Problems go back as a revision turn (append-only, thinking blocks kept). Refusal, `max_tokens`, API error, no key or 3 failed attempts → greedy, so a plan that misses the targets is never shown.
+- Live test 2026-11-25 on fixture menus: ~21 s, first attempt, 129 g / 1,538 kcal / 1,835 mg (and 122 g / 1,841 mg with breakfast skipped). Roughly $0.03–0.05 per plan.
 
 Original design notes:
 

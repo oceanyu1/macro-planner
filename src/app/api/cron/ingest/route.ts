@@ -1,12 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getSettings } from "@/lib/data";
-import { addDays, today } from "@/lib/dates";
+import { today } from "@/lib/dates";
 import { ingestRange } from "@/lib/menu/ingest";
-import { generatePlan } from "@/lib/plan-service";
+import { refreshPlans } from "@/lib/plan-service";
 import { estimateMenuPotassium } from "@/lib/potassium-service";
 
-// ~21 sequential requests of 0.5–1.3 MB each; ingestRange stops starting new days at 240 s.
+// ~21 sequential menu requests (ingestRange stops starting new days at 150 s), then up to 2 Claude plans.
 export const maxDuration = 300;
 
 function authorized(req: Request): boolean {
@@ -35,16 +35,8 @@ export async function GET(req: Request) {
     potassium = { error: (err as Error).message };
     console.error("potassium:", (err as Error).message);
   }
-  // Re-plan today and tomorrow against the fresh menu. Locked (eaten) meals and rejections are kept.
-  const planned: Record<string, boolean> = {};
-  for (const d of [start, addDays(start, 1)]) {
-    try {
-      planned[d] = (await generatePlan(d)) != null;
-    } catch (err) {
-      planned[d] = false;
-      console.error(`plan ${d}:`, (err as Error).message);
-    }
-  }
+  // Plan tomorrow with Claude (and today, if it has no plan yet). Falls back to greedy on any failure.
+  const planned = await refreshPlans(start);
   // A non-2xx status makes failures show up in Vercel's cron and function logs.
   return NextResponse.json({ ...report, potassium, planned }, { status: report.ok ? 200 : 502 });
 }

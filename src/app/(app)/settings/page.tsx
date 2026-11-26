@@ -29,7 +29,7 @@ export default async function SettingsPage() {
   const splitSum = MEALS.reduce((a, m) => a + (s.proteinSplit[m] ?? 0), 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:max-w-2xl">
       <h1 className="text-lg font-semibold">Settings</h1>
 
       <form action={saveSettings} className="space-y-4">

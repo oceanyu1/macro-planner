@@ -120,3 +120,21 @@ describe("planDay on the 2026-11-24 menus", () => {
     expect(p.warnings.length).toBeGreaterThan(0);
   });
 });
+
+describe("skipped meals", () => {
+  it("moves a skipped meal's share to the other meals", () => {
+    const { meals, day } = mealTargets(SETTINGS, ["breakfast"]);
+    expect(meals.breakfast.proteinG).toBe(0);
+    expect(meals.lunch.proteinG).toBeCloseTo(meals.dinner.proteinG);
+    expect(meals.lunch.proteinG + meals.dinner.proteinG).toBeGreaterThanOrEqual(120);
+    expect(day).toEqual(mealTargets(SETTINGS).day); // the day's targets don't change
+  });
+
+  it("plans lunch and dinner to cover a skipped breakfast", () => {
+    const p = planDay({ settings: SETTINGS, menu, skipped: ["breakfast"] });
+    expect(p.meals.breakfast.picks).toEqual([]);
+    expect(p.meals.breakfast.skipped).toBe(true);
+    expect(p.totals.proteinG).toBeGreaterThanOrEqual(120);
+    expect(p.totals.sodiumMg).toBeLessThanOrEqual(mealTargets(SETTINGS).day.sodiumMg);
+  });
+});

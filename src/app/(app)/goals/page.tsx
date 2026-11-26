@@ -22,7 +22,7 @@ export default async function GoalsPage() {
   const counts = Object.fromEntries(STATUSES.map((s) => [s, apps.filter((a) => a.status === s).length]));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:max-w-2xl">
       <h1 className="text-lg font-semibold">Long goals</h1>
 
       {/* internships */}

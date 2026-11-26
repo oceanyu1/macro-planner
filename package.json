@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0",
     "@vercel/functions": "^3.11.3",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.6",

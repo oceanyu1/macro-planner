@@ -27,7 +27,7 @@ export default async function PotassiumReviewPage({ searchParams }: PageProps<"/
   const shown = showAll ? maps : toReview;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:max-w-2xl">
       <header className="flex items-center justify-between">
         <Link href="/settings" className="btn w-10" aria-label="Back to settings">
           ‹

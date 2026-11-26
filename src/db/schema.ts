@@ -116,7 +116,7 @@ export const kMapping = pgTable("k_mapping", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type PlanItem = { itemId: number; servings: number; role?: "protein" | "vegetable" | "starch" };
+export type PlanItem = { itemId: number; servings: number; role?: "protein" | "vegetable" | "starch" | "other" };
 export type Totals = { proteinG: number; sodiumMg: number; potassiumMg: number; calories: number };
 
 /** The generated plan for one meal of one day. */
@@ -132,6 +132,8 @@ export const plan = pgTable(
     generator: text("generator"), // "greedy" | "llm"
     /** Dish source ids rejected (✕) for this meal; Regenerate excludes them. */
     rejected: text("rejected").array().notNull().default([]),
+    /** Meal skipped (e.g. no breakfast): its share of the day moves to the remaining meals. */
+    skipped: boolean("skipped").notNull().default(false),
     locked: boolean("locked").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
